@@ -1,0 +1,22 @@
+# Build outputs
+**/bin/
+**/obj/
+
+# User/IDE files
+.vscode/
+*.user
+*.suo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Runtime and logs
+*.log
+
+# Environment secrets
+.env
+
+# Local outputs
+vagas_linkedin.txt
+WebCrawler/vagas_linkedin.txt
