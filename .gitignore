@@ -20,3 +20,7 @@ Thumbs.db
 # Local outputs
 vagas_linkedin.txt
 WebCrawler/vagas_linkedin.txt
+ignored_job_links.txt
+vagas_enviadas_sucesso.txt
+vagas_enviadas_sucesso_historico.txt
+autofill_test_log*.txt
