@@ -740,10 +740,19 @@ partial class Program
                     }
 
                     // Marca no banco somente quando o fluxo do popup foi concluído.
-                    MarkJobAsApplied(link);
+                    var appliedMarkedInDatabase = MarkJobAsApplied(link);
                     RegisterSuccessfulApplication(link, "DATABASE_FLOW");
-                    Console.WriteLine("Vaga marcada como candidatura_enviada = TRUE no banco.");
-                    LogApplicationStep(link, "job_marked_as_applied", true, "Vaga marcada como candidatura enviada.");
+
+                    if (appliedMarkedInDatabase)
+                    {
+                        Console.WriteLine("Vaga marcada como candidatura_enviada = TRUE no banco.");
+                        LogApplicationStep(link, "job_marked_as_applied", true, "Vaga marcada como candidatura enviada.");
+                    }
+                    else
+                    {
+                        Console.WriteLine("[ALERTA] Candidatura enviada, mas nenhuma linha foi atualizada no banco para candidatura_enviada.");
+                        LogApplicationStep(link, "job_marked_as_applied", false, "Candidatura enviada no site, mas nenhuma linha foi encontrada para atualizar candidatura_enviada.");
+                    }
 
                     // Espera curta para estabilização de modal/fluxo antes da próxima vaga.
                     Thread.Sleep(1500);

@@ -85,6 +85,9 @@ partial class Program
     {
         var hasMorePages = true;
         var pagesCollected = 1;
+        var paginationWaitTimeout = wait.Timeout > TimeSpan.FromSeconds(10)
+            ? wait.Timeout
+            : TimeSpan.FromSeconds(25);
         Console.WriteLine("Iniciando paginação...");
 
         while (hasMorePages)
@@ -95,47 +98,28 @@ partial class Program
                 break;
             }
 
-            var paginationButtons = driver.FindElements(By.CssSelector("ul.jobs-search-pagination__pages button.jobs-search-pagination__indicator-button"));
-            var currentPageIndex = -1;
-
-            for (var index = 0; index < paginationButtons.Count; index++)
-            {
-                if (paginationButtons[index].GetAttribute("aria-current") == "page")
-                {
-                    currentPageIndex = index;
-                    break;
-                }
-            }
-
-            if (currentPageIndex < 0 || currentPageIndex + 1 >= paginationButtons.Count)
+            if (!TryResolveNextPaginationButton(driver, out var nextButton, out var nextButtonInfo) || nextButton == null)
             {
                 hasMorePages = false;
                 continue;
             }
 
-            var nextButton = paginationButtons[currentPageIndex + 1];
+            Console.WriteLine($"Indo para próxima página... ({nextButtonInfo})");
+            var currentPageNumber = GetCurrentPaginationPageNumber(driver);
+            var firstCardKeyBeforeClick = GetFirstJobCardKey(driver);
 
-            bool nextButtonReady;
-            try
+            if (!TryAdvancePagination(driver, nextButton, currentPageNumber, firstCardKeyBeforeClick, paginationWaitTimeout))
             {
-                nextButtonReady = wait.Until(_ => nextButton.Displayed && nextButton.Enabled);
-            }
-            catch (WebDriverTimeoutException)
-            {
-                Console.WriteLine("Próximo botão de paginação não ficou clicável a tempo. Encerrando paginação desta execução.");
+                Console.WriteLine("Próximo botão de paginação não avançou a lista a tempo. Encerrando paginação desta execução.");
                 break;
             }
 
-            if (!nextButtonReady)
-            {
-                Console.WriteLine("Próximo botão de paginação não está pronto. Encerrando paginação desta execução.");
-                break;
-            }
-
-            Console.WriteLine("Indo para próxima página...");
-            nextButton.Click();
-            Thread.Sleep(2500);
             pagesCollected++;
+            var currentPageAfterNavigation = GetCurrentPaginationPageNumber(driver);
+            if (currentPageAfterNavigation > 0)
+            {
+                Console.WriteLine($"Página atual após paginação: {currentPageAfterNavigation}");
+            }
 
             var pageCards = FindJobCards(driver);
             Console.WriteLine($"Cards encontrados na página: {pageCards.Count}");
@@ -144,6 +128,295 @@ partial class Program
             allJobsLines.AddRange(pageExtraction.RawLines);
             allJobsData.AddRange(pageExtraction.StructuredJobs);
         }
+    }
+
+    private static bool TryResolveNextPaginationButton(IWebDriver driver, out IWebElement? nextButton, out string nextButtonInfo)
+    {
+        nextButton = null;
+        nextButtonInfo = "sem informacao";
+
+        try
+        {
+            var paginationButtons = driver.FindElements(By.CssSelector("ul.jobs-search-pagination__pages button.jobs-search-pagination__indicator-button"));
+            var currentPageIndex = -1;
+
+            for (var index = 0; index < paginationButtons.Count; index++)
+            {
+                if (string.Equals(paginationButtons[index].GetAttribute("aria-current"), "page", StringComparison.OrdinalIgnoreCase))
+                {
+                    currentPageIndex = index;
+                    break;
+                }
+            }
+
+            if (currentPageIndex >= 0)
+            {
+                for (var index = currentPageIndex + 1; index < paginationButtons.Count; index++)
+                {
+                    var candidate = paginationButtons[index];
+                    if (IsPaginationButtonDisabled(candidate))
+                    {
+                        continue;
+                    }
+
+                    nextButton = candidate;
+                    nextButtonInfo = $"indicador index={index}, texto='{candidate.Text?.Trim()}', aria-label='{candidate.GetAttribute("aria-label")}'";
+                    return true;
+                }
+            }
+
+            var nextCandidates = driver.FindElements(By.XPath(
+                "//button[contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'next') or " +
+                "contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'próxima') or " +
+                "contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'proxima')]"));
+
+            foreach (var candidate in nextCandidates)
+            {
+                if (IsPaginationButtonDisabled(candidate))
+                {
+                    continue;
+                }
+
+                nextButton = candidate;
+                nextButtonInfo = $"aria-next, texto='{candidate.Text?.Trim()}', aria-label='{candidate.GetAttribute("aria-label")}'";
+                return true;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Erro ao localizar próximo botão de paginação: {ex.Message}");
+        }
+
+        return false;
+    }
+
+    private static bool TryAdvancePagination(
+        IWebDriver driver,
+        IWebElement? nextButton,
+        int currentPageNumber,
+        string firstCardKeyBeforeClick,
+        TimeSpan timeout)
+    {
+        if (nextButton == null)
+        {
+            return false;
+        }
+
+        if (!TryClickPaginationButton(driver, nextButton))
+        {
+            return false;
+        }
+
+        if (WaitForPaginationAdvance(driver, currentPageNumber, firstCardKeyBeforeClick, timeout))
+        {
+            Thread.Sleep(1200);
+            return true;
+        }
+
+        Console.WriteLine("Primeira tentativa de paginação não avançou. Tentando novamente...");
+
+        if (!TryResolveNextPaginationButton(driver, out var retryButton, out _ ) || retryButton == null)
+        {
+            return false;
+        }
+
+        if (!TryClickPaginationButton(driver, retryButton))
+        {
+            return false;
+        }
+
+        if (WaitForPaginationAdvance(driver, currentPageNumber, firstCardKeyBeforeClick, timeout))
+        {
+            Thread.Sleep(1200);
+            return true;
+        }
+
+        return false;
+    }
+
+    private static bool WaitForPaginationAdvance(
+        IWebDriver driver,
+        int previousPageNumber,
+        string previousFirstCardKey,
+        TimeSpan timeout)
+    {
+        try
+        {
+            var transitionWait = new WebDriverWait(driver, timeout);
+            return transitionWait.Until(d =>
+            {
+                var currentPageNumber = GetCurrentPaginationPageNumber(d);
+                if (previousPageNumber > 0 && currentPageNumber > previousPageNumber)
+                {
+                    return true;
+                }
+
+                var currentFirstCardKey = GetFirstJobCardKey(d);
+                if (!string.IsNullOrWhiteSpace(previousFirstCardKey) &&
+                    !string.IsNullOrWhiteSpace(currentFirstCardKey) &&
+                    !string.Equals(previousFirstCardKey, currentFirstCardKey, StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+
+                return false;
+            });
+        }
+        catch (WebDriverTimeoutException)
+        {
+            return false;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    private static bool TryClickPaginationButton(IWebDriver driver, IWebElement button)
+    {
+        try
+        {
+            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", button);
+        }
+        catch
+        {
+            // Sem ação adicional: tenta clique mesmo sem scroll.
+        }
+
+        try
+        {
+            ClickElementRobust(driver, button);
+            return true;
+        }
+        catch
+        {
+            try
+            {
+                ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].click();", button);
+                return true;
+            }
+            catch
+            {
+                return false;
+            }
+        }
+    }
+
+    private static bool IsPaginationButtonDisabled(IWebElement button)
+    {
+        try
+        {
+            var disabled = button.GetAttribute("disabled");
+            if (!string.IsNullOrWhiteSpace(disabled))
+            {
+                return true;
+            }
+
+            var ariaDisabled = button.GetAttribute("aria-disabled");
+            return string.Equals(ariaDisabled, "true", StringComparison.OrdinalIgnoreCase);
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    private static int GetCurrentPaginationPageNumber(IWebDriver driver)
+    {
+        try
+        {
+            var paginationButtons = driver.FindElements(By.CssSelector("ul.jobs-search-pagination__pages button.jobs-search-pagination__indicator-button"));
+            for (var index = 0; index < paginationButtons.Count; index++)
+            {
+                var button = paginationButtons[index];
+                if (!string.Equals(button.GetAttribute("aria-current"), "page", StringComparison.OrdinalIgnoreCase))
+                {
+                    continue;
+                }
+
+                var pageNumber = ExtractFirstPositiveInteger($"{button.Text} {button.GetAttribute("aria-label")}");
+                if (pageNumber > 0)
+                {
+                    return pageNumber;
+                }
+
+                return index + 1;
+            }
+        }
+        catch
+        {
+            // Ignora erro e retorna desconhecido.
+        }
+
+        return -1;
+    }
+
+    private static string GetFirstJobCardKey(IWebDriver driver)
+    {
+        try
+        {
+            var cards = FindJobCards(driver);
+            foreach (var card in cards)
+            {
+                var link = GetAttributeBySelectors(card, "href",
+                    "a.job-card-container__link",
+                    "a.job-card-list__title");
+
+                var normalizedLink = NormalizeLinkedInJobLink(link);
+                if (!string.IsNullOrWhiteSpace(normalizedLink))
+                {
+                    return normalizedLink;
+                }
+
+                var text = card.Text?.Trim() ?? string.Empty;
+                if (!string.IsNullOrWhiteSpace(text))
+                {
+                    if (text.Length > 120)
+                    {
+                        return text.Substring(0, 120);
+                    }
+
+                    return text;
+                }
+            }
+        }
+        catch
+        {
+            // Ignora erro e retorna vazio.
+        }
+
+        return string.Empty;
+    }
+
+    private static int ExtractFirstPositiveInteger(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return -1;
+        }
+
+        var digits = string.Empty;
+        for (var i = 0; i < value.Length; i++)
+        {
+            var current = value[i];
+            if (char.IsDigit(current))
+            {
+                digits += current;
+                continue;
+            }
+
+            if (digits.Length > 0)
+            {
+                break;
+            }
+        }
+
+        if (digits.Length == 0)
+        {
+            return -1;
+        }
+
+        return int.TryParse(digits, out var parsed) ? parsed : -1;
     }
 
     private static List<(string Titulo, string Empresa, string Localizacao, string Link)> NormalizeAndDeduplicateJobs(
@@ -297,14 +570,20 @@ partial class Program
     {
         try
         {
-            var badgeElements = card.FindElements(By.XPath(".//*[contains(., 'Candidatura simplificada') or contains(@aria-label, 'Candidatura simplificada')]"));
+            var badgeElements = card.FindElements(By.XPath(
+                ".//*[contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'candidatura simplificada') or " +
+                "contains(translate(normalize-space(.), 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'easy apply') or " +
+                "contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'candidatura simplificada') or " +
+                "contains(translate(@aria-label, 'ABCDEFGHIJKLMNOPQRSTUVWXYZ', 'abcdefghijklmnopqrstuvwxyz'), 'easy apply')]"));
             if (badgeElements.Count > 0)
             {
                 return true;
             }
 
             var text = card.Text;
-            return text != null && text.Contains("Candidatura simplificada", StringComparison.OrdinalIgnoreCase);
+            return text != null &&
+                   (text.Contains("Candidatura simplificada", StringComparison.OrdinalIgnoreCase) ||
+                    text.Contains("Easy Apply", StringComparison.OrdinalIgnoreCase));
         }
         catch
         {

@@ -125,6 +125,21 @@ partial class Program
         Console.WriteLine($"Vaga registrada como enviada com sucesso: {normalizedLink} (origem: {sourceContext})");
     }
 
+    private static bool HasSuccessfulApplicationRecorded(string? link)
+    {
+        var normalizedLink = NormalizeLinkedInJobLink(link);
+        if (string.IsNullOrWhiteSpace(normalizedLink))
+        {
+            return false;
+        }
+
+        lock (SuccessfulJobLinksLock)
+        {
+            return SuccessfulJobLinksCurrentCycle.Contains(normalizedLink)
+                || SuccessfulJobLinksPersisted.Contains(normalizedLink);
+        }
+    }
+
     private static void PrintSuccessfulJobsCycleSummary()
     {
         List<string> successLinks;

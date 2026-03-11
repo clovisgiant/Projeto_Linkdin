@@ -1,0 +1,13 @@
+services:
+  applinkdin:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: applinkdin-dashboard
+    ports:
+      - "4000:4000"
+    environment:
+      APPLINKDIN_API_PORT: 4000
+    env_file:
+      - ./.env
+    restart: unless-stopped

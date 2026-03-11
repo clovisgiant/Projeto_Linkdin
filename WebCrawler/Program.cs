@@ -14,15 +14,15 @@ partial class Program
     private static bool AutoFillMandatoryFieldsEnabled = true;
     private static string AutoFillDefaultFirstName = "Clovis";
     private static string AutoFillDefaultLastName = "Silva";
-    private static string AutoFillDefaultPhone = "11999999999";
+    private static string AutoFillDefaultPhone = "11959391726";
     private static string AutoFillDefaultLocation = "Sao Paulo";
-    private static string AutoFillDefaultEmail = string.Empty;
+    private static string AutoFillDefaultEmail = "clovis.eduardosilva23@gmail.com";
     private static string AutoFillDefaultWebsite = "";
-    private static string AutoFillDefaultLinkedIn = "";
+    private static string AutoFillDefaultLinkedIn = "www.linkedin.com/in/clovis-silva-dev";
     private static string AutoFillDefaultGithub = "";
-    private static string AutoFillDefaultSalary = "7000";
+    private static string AutoFillDefaultSalary = "7500";
     private static string AutoFillDefaultGenericText = "Tenho experiencia compativel com a vaga e disponibilidade para atuar no escopo solicitado.";
-    private static int AutoFillDefaultYearsExperience = 3;
+    private static int AutoFillDefaultYearsExperience = 10;
     private static bool AutoFillDefaultCheckboxTrue = true;
     private static bool AutoFillDefaultWorkAuthorization = true;
     private static bool AutoFillDefaultNeedVisaSponsorship = false;
@@ -47,10 +47,10 @@ partial class Program
         var linkedinPassword = GetRequiredEnv("LINKEDIN_PASSWORD");
 
         var testMode = GetOptionalBoolEnv("WEBCRAWLER_TEST_MODE", false);
-        var disableDatabase = GetOptionalBoolEnv("WEBCRAWLER_DISABLE_DATABASE", false);
+        var disableDatabase = GetOptionalBoolEnv("WEBCRAWLER_DISABLE_DATABASE", true);
         var maxPagesPerCycle = GetOptionalIntEnv("WEBCRAWLER_MAX_PAGES_PER_CYCLE", testMode ? 1 : 0);
         var maxJobsToApplyPerCycle = GetOptionalIntEnv("WEBCRAWLER_MAX_APPLY_PER_CYCLE", testMode ? 2 : 0);
-        var cycleWaitMinutes = GetOptionalIntEnv("WEBCRAWLER_CYCLE_WAIT_MINUTES", testMode ? 1 : 20);
+        var cycleWaitMinutes = GetOptionalIntEnv("WEBCRAWLER_CYCLE_WAIT_MINUTES", testMode ? 1 : 10);
         var usePersistentProfile = GetOptionalBoolEnv("WEBCRAWLER_USE_PERSISTENT_PROFILE", true);
         var persistIgnoredLinks = GetOptionalBoolEnv("WEBCRAWLER_PERSIST_IGNORED_LINKS", true);
         var persistSuccessfulLinks = GetOptionalBoolEnv("WEBCRAWLER_PERSIST_SUCCESSFUL_LINKS", true);
@@ -97,6 +97,14 @@ partial class Program
         while (true)
         {
             Console.WriteLine("Iniciando nova execução...");
+
+            if (DatabaseEnabled && !ValidateDatabaseConnection())
+            {
+                Console.WriteLine("Conexão com o banco indisponível. Aguardando 2 minuto(s) antes da próxima tentativa...");
+                Thread.Sleep(TimeSpan.FromMinutes(2));
+                continue;
+            }
+
             StartSuccessfulJobsCycle();
 
             using var driver = new ChromeDriver(BuildChromeOptions(usePersistentProfile));
