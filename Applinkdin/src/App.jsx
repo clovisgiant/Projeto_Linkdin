@@ -53,7 +53,7 @@ function SummaryCard({ title, value, hint, tone }) {
   );
 }
 
-function DataTable({ title, columns, rows, emptyText, enablePagination = false, pageSize = 30 }) {
+function DataTable({ title, columns, rows, emptyText, enablePagination = false, pageSize = 20 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
   const totalPages = useMemo(() => {
@@ -314,7 +314,7 @@ export default function App() {
             emptyText="Nenhuma candidatura com sucesso no momento."
             rows={dashboard.successfulJobs}
             enablePagination
-            pageSize={30}
+            pageSize={20}
             columns={[
               { key: "titulo", label: "Vaga" },
               { key: "empresa", label: "Empresa" },
@@ -328,7 +328,7 @@ export default function App() {
             emptyText="Nenhuma vaga indisponivel registrada."
             rows={dashboard.unavailableJobs}
             enablePagination
-            pageSize={30}
+            pageSize={20}
             columns={[
               { key: "titulo", label: "Vaga" },
               { key: "empresa", label: "Empresa" },
@@ -342,7 +342,7 @@ export default function App() {
             emptyText="Sem vagas nesse estado."
             rows={dashboard.pendingConfirmation}
             enablePagination
-            pageSize={30}
+            pageSize={20}
             columns={[
               { key: "titulo", label: "Vaga" },
               { key: "empresa", label: "Empresa" },
@@ -356,7 +356,7 @@ export default function App() {
             emptyText="Nenhuma etapa registrada ainda."
             rows={dashboard.recentSteps}
             enablePagination
-            pageSize={30}
+            pageSize={20}
             columns={[
               { key: "etapa", label: "Etapa" },
               { key: "sucesso", label: "Status", render: (value) => (value ? <StatusPill kind="success" label="Sucesso" /> : <StatusPill kind="danger" label="Falha" />) },
