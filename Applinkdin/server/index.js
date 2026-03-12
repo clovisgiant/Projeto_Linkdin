@@ -20,6 +20,7 @@ const rawConnectionValue =
 const apiPort = Number(process.env.APPLINKDIN_API_PORT || process.env.PORT || 4000);
 const { Pool } = pg;
 const clientDistPath = path.resolve(__dirname, "..", "dist");
+const isRunningInDocker = process.platform === "linux" && fs.existsSync("/.dockerenv");
 
 function parseConnectionValue(value) {
   const trimmed = (value || "").trim();
@@ -59,7 +60,44 @@ function parseConnectionValue(value) {
   };
 }
 
-const pool = new Pool(parseConnectionValue(rawConnectionValue));
+function isLoopbackHost(host) {
+  const normalized = (host || "").trim().toLowerCase();
+  return !normalized || normalized === "localhost" || normalized === "127.0.0.1" || normalized === "::1";
+}
+
+function withDockerHostFallback(config) {
+  if (!isRunningInDocker || !config) {
+    return config;
+  }
+
+  if (config.connectionString) {
+    try {
+      const url = new URL(config.connectionString);
+      if (isLoopbackHost(url.hostname)) {
+        url.hostname = "host.docker.internal";
+        return {
+          ...config,
+          connectionString: url.toString()
+        };
+      }
+    } catch {
+      return config;
+    }
+
+    return config;
+  }
+
+  if (!isLoopbackHost(config.host)) {
+    return config;
+  }
+
+  return {
+    ...config,
+    host: "host.docker.internal"
+  };
+}
+
+const pool = new Pool(withDockerHostFallback(parseConnectionValue(rawConnectionValue)));
 
 const app = express();
 app.use(cors());
@@ -91,6 +129,10 @@ async function queryRows(sqlText, values = []) {
 }
 
 function isCrawlerRunning() {
+  if (process.platform !== "win32") {
+    return false;
+  }
+
   try {
     const out = execSync('tasklist /FI "IMAGENAME eq WebCrawler.exe" /NH /FO CSV', { timeout: 5000, windowsHide: true }).toString();
     return out.toLowerCase().includes("webcrawler.exe");
@@ -99,9 +141,37 @@ function isCrawlerRunning() {
   }
 }
 
+function normalizeCrawlerState(value) {
+  const normalized = (value || "").trim().toLowerCase();
+  if (normalized === "waiting") {
+    return "waiting";
+  }
+
+  if (normalized === "running") {
+    return "running";
+  }
+
+  return null;
+}
+
+async function readCrawlerHeartbeat() {
+  try {
+    const rows = await queryRows(`
+      SELECT state, detail, is_running, process_id, host_name, started_at, last_heartbeat, updated_at
+      FROM crawler_runtime_status
+      WHERE instance_name = 'default'
+      LIMIT 1;
+    `);
+
+    return rows[0] ?? null;
+  } catch {
+    return null;
+  }
+}
+
 app.get("/api/crawler-status", async (_req, res) => {
   try {
-    const running = isCrawlerRunning();
+    const tasklistRunning = isCrawlerRunning();
 
     let lastActivity = null;
     try {
@@ -114,20 +184,42 @@ app.get("/api/crawler-status", async (_req, res) => {
       lastActivity = rows[0]?.last_activity ?? null;
     } catch { /* banco pode estar inacessivel */ }
 
+    const heartbeat = await readCrawlerHeartbeat();
+
     const minutesSince = lastActivity
       ? (Date.now() - new Date(lastActivity).getTime()) / 60000
       : null;
 
+    const heartbeatState = normalizeCrawlerState(heartbeat?.state);
+    const heartbeatMinutesSince = heartbeat?.last_heartbeat
+      ? (Date.now() - new Date(heartbeat.last_heartbeat).getTime()) / 60000
+      : null;
+
+    const heartbeatFresh = heartbeatMinutesSince !== null && heartbeatMinutesSince <= 2.5;
+
     let state;
-    if (!running) {
-      state = "offline";
-    } else if (minutesSince === null || minutesSince > 3) {
+    if (tasklistRunning) {
+      state = minutesSince !== null && minutesSince <= 3 ? "running" : "waiting";
+    } else if (heartbeatFresh && heartbeatState) {
+      state = heartbeatState;
+    } else if (minutesSince !== null && minutesSince <= 3) {
+      state = "running";
+    } else if (minutesSince !== null && minutesSince <= 60) {
       state = "waiting";
     } else {
-      state = "running";
+      state = "offline";
     }
 
-    res.json({ state, running, lastActivity, minutesSinceActivity: minutesSince ? Math.round(minutesSince) : null });
+    res.json({
+      state,
+      running: tasklistRunning || heartbeatFresh,
+      lastActivity,
+      minutesSinceActivity: minutesSince ? Math.round(minutesSince) : null,
+      heartbeatState,
+      heartbeatDetail: heartbeat?.detail ?? null,
+      heartbeatAt: heartbeat?.last_heartbeat ?? null,
+      minutesSinceHeartbeat: heartbeatMinutesSince !== null ? Math.round(heartbeatMinutesSince) : null
+    });
   } catch (error) {
     res.json({ state: "offline", running: false, error: error.message });
   }

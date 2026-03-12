@@ -209,7 +209,7 @@ partial class Program
 
         if (WaitForPaginationAdvance(driver, currentPageNumber, firstCardKeyBeforeClick, timeout))
         {
-            Thread.Sleep(1200);
+            PauseAfterPaginationAdvance();
             return true;
         }
 
@@ -227,7 +227,7 @@ partial class Program
 
         if (WaitForPaginationAdvance(driver, currentPageNumber, firstCardKeyBeforeClick, timeout))
         {
-            Thread.Sleep(1200);
+            PauseAfterPaginationAdvance();
             return true;
         }
 
@@ -274,14 +274,7 @@ partial class Program
 
     private static bool TryClickPaginationButton(IWebDriver driver, IWebElement button)
     {
-        try
-        {
-            ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", button);
-        }
-        catch
-        {
-            // Sem ação adicional: tenta clique mesmo sem scroll.
-        }
+        TryScrollElementIntoViewHumanized(driver, button);
 
         try
         {

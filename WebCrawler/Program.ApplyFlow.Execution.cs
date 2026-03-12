@@ -218,8 +218,7 @@ partial class Program
         }
 
         // Scroll até o botão para garantir visibilidade/interação.
-        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", applyButton);
-        Thread.Sleep(500);
+        TryScrollElementIntoViewHumanized(driver, applyButton);
 
         // Regra importante: para manter o comportamento antigo (abrir popup/modal), tentamos SEMPRE clicar primeiro.
         // Alguns fluxos SDUI são links; nesses casos, se o clique não disparar nada, usamos fallback de navegar pelo href.
@@ -230,7 +229,7 @@ partial class Program
 
         // 1) Clique primeiro (prioriza popup/modal)
         ClickElementRobust(driver, applyButton);
-        Thread.Sleep(900);
+        PauseBetweenFlowSteps();
 
         // 2) Se o clique não mudou nada e for SDUI, navega direto para o href
         try
@@ -256,7 +255,7 @@ partial class Program
                 LogApplicationStep(link, "easy_apply_navigate_sdui_href_fallback", true,
                     $"Clique não abriu popup; navegando para href SDUI apply. eBP='{ebp}'. href='{applyHref}'.");
                 driver.Navigate().GoToUrl(applyHref);
-                Thread.Sleep(700);
+                PauseBetweenFlowSteps();
             }
         }
         catch
@@ -340,7 +339,7 @@ partial class Program
         }
 
         // Pequena folga adicional para componentes internos do modal renderizarem totalmente.
-        Thread.Sleep(450);
+        PauseBetweenFlowSteps();
 
         // Seleciona currículo na etapa seguinte quando necessário.
         Console.WriteLine("[ETAPA] Tentando selecionar currículo...");
@@ -436,11 +435,11 @@ partial class Program
         if (reviewed)
         {
             // Aguarda transição para a tela de envio após revisão.
-            Thread.Sleep(800);
+            PauseBetweenFlowSteps();
         }
 
         // Aguarda transição para a etapa final de envio.
-        Thread.Sleep(800);
+        PauseBetweenFlowSteps();
 
         IWebElement? FindSubmitButtonCandidate()
         {
@@ -666,8 +665,7 @@ partial class Program
         }
 
         // Scroll e clique no botão final para enviar candidatura.
-        ((IJavaScriptExecutor)driver).ExecuteScript("arguments[0].scrollIntoView({block: 'center'});", submitButton);
-        Thread.Sleep(300);
+        TryScrollElementIntoViewHumanized(driver, submitButton);
         ClickElementRobust(driver, submitButton);
         Console.WriteLine("Botão 'Enviar candidatura' clicado com sucesso.");
         LogApplicationStep(link, "submit_clicked", true, "Botão Enviar candidatura clicado com sucesso.");
@@ -736,6 +734,7 @@ partial class Program
                     if (!flowCompleted)
                     {
                         Console.WriteLine("Fluxo de candidatura não concluído para esta vaga (ignorando e seguindo para a próxima).");
+                        PauseBetweenApplications(link, flowCompleted: false);
                         continue;
                     }
 
@@ -754,8 +753,7 @@ partial class Program
                         LogApplicationStep(link, "job_marked_as_applied", false, "Candidatura enviada no site, mas nenhuma linha foi encontrada para atualizar candidatura_enviada.");
                     }
 
-                    // Espera curta para estabilização de modal/fluxo antes da próxima vaga.
-                    Thread.Sleep(1500);
+                    PauseBetweenApplications(link, flowCompleted: true);
                 }
                 catch (WebDriverTimeoutException ex)
                 {
@@ -849,12 +847,13 @@ partial class Program
                     if (!flowCompleted)
                     {
                         Console.WriteLine("Fluxo de candidatura não concluído para esta vaga (seguindo para a próxima).");
+                        PauseBetweenApplications(link, flowCompleted: false);
                         continue;
                     }
 
                     RegisterSuccessfulApplication(link, "DIRECT_LIST_FLOW");
                     Console.WriteLine("Fluxo concluído para a vaga na lista direta.");
-                    Thread.Sleep(1500);
+                    PauseBetweenApplications(link, flowCompleted: true);
                 }
                 catch (Exception ex)
                 {

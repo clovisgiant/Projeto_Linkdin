@@ -86,6 +86,24 @@ Exemplo de connection string:
 Host=localhost;Port=5432;Database=ProjetoDb;Username=postgres;Password=sua_senha
 ```
 
+Variaveis operacionais recomendadas para reduzir padrao repetitivo no LinkedIn:
+- WEBCRAWLER_MAX_APPLY_PER_CYCLE
+- WEBCRAWLER_CYCLE_WAIT_MINUTES
+- WEBCRAWLER_INTERACTION_DELAY_MIN_MS
+- WEBCRAWLER_INTERACTION_DELAY_MAX_MS
+- WEBCRAWLER_APPLY_DELAY_MIN_MS
+- WEBCRAWLER_APPLY_DELAY_MAX_MS
+- WEBCRAWLER_PAGINATION_DELAY_MIN_MS
+- WEBCRAWLER_PAGINATION_DELAY_MAX_MS
+- WEBCRAWLER_ACTIVE_HOURS_START
+- WEBCRAWLER_ACTIVE_HOURS_END
+
+Defaults atuais fora de TEST_MODE:
+- maximo de 15 candidaturas por ciclo
+- espera de 45 minutos entre ciclos
+- jitter entre interacoes e entre candidaturas
+- janela ativa opcional, por exemplo `08:00` ate `20:00`
+
 ### 3.2 Arquivo .env do dashboard (AppLinkdin)
 
 ```powershell

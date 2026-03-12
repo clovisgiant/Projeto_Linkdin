@@ -130,6 +130,9 @@ partial class Program
 
     private static void ClickElementRobust(IWebDriver driver, IWebElement element)
     {
+        TryScrollElementIntoViewHumanized(driver, element);
+        PauseBeforeClick();
+
         try
         {
             element.Click();
@@ -156,6 +159,6 @@ partial class Program
             }
         });
 
-        Thread.Sleep(1200);
+        SleepRandomDelay(900, 1800);
     }
 }

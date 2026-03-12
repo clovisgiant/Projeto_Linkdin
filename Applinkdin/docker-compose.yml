@@ -4,6 +4,8 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: applinkdin-dashboard
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "4000:4000"
     environment:

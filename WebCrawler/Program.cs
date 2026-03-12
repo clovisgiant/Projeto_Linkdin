@@ -49,12 +49,20 @@ partial class Program
         var testMode = GetOptionalBoolEnv("WEBCRAWLER_TEST_MODE", false);
         var disableDatabase = GetOptionalBoolEnv("WEBCRAWLER_DISABLE_DATABASE", true);
         var maxPagesPerCycle = GetOptionalIntEnv("WEBCRAWLER_MAX_PAGES_PER_CYCLE", testMode ? 1 : 0);
-        var maxJobsToApplyPerCycle = GetOptionalIntEnv("WEBCRAWLER_MAX_APPLY_PER_CYCLE", testMode ? 2 : 0);
-        var cycleWaitMinutes = GetOptionalIntEnv("WEBCRAWLER_CYCLE_WAIT_MINUTES", testMode ? 1 : 10);
+        var maxJobsToApplyPerCycle = GetOptionalIntEnv("WEBCRAWLER_MAX_APPLY_PER_CYCLE", testMode ? 2 : 15);
+        var cycleWaitMinutes = GetOptionalIntEnv("WEBCRAWLER_CYCLE_WAIT_MINUTES", testMode ? 1 : 45);
         var usePersistentProfile = GetOptionalBoolEnv("WEBCRAWLER_USE_PERSISTENT_PROFILE", true);
         var persistIgnoredLinks = GetOptionalBoolEnv("WEBCRAWLER_PERSIST_IGNORED_LINKS", true);
         var persistSuccessfulLinks = GetOptionalBoolEnv("WEBCRAWLER_PERSIST_SUCCESSFUL_LINKS", true);
         var autoFillMandatoryFields = GetOptionalBoolEnv("WEBCRAWLER_AUTO_FILL_MANDATORY_FIELDS", true);
+        var interactionDelayMinMs = GetOptionalIntEnv("WEBCRAWLER_INTERACTION_DELAY_MIN_MS", testMode ? 200 : 800);
+        var interactionDelayMaxMs = GetOptionalIntEnv("WEBCRAWLER_INTERACTION_DELAY_MAX_MS", testMode ? 600 : 2500);
+        var applyDelayMinMs = GetOptionalIntEnv("WEBCRAWLER_APPLY_DELAY_MIN_MS", testMode ? 800 : 5000);
+        var applyDelayMaxMs = GetOptionalIntEnv("WEBCRAWLER_APPLY_DELAY_MAX_MS", testMode ? 1500 : 15000);
+        var paginationDelayMinMs = GetOptionalIntEnv("WEBCRAWLER_PAGINATION_DELAY_MIN_MS", testMode ? 500 : 1200);
+        var paginationDelayMaxMs = GetOptionalIntEnv("WEBCRAWLER_PAGINATION_DELAY_MAX_MS", testMode ? 1200 : 2800);
+        var activeHoursStart = GetOptionalTimeOfDayEnv("WEBCRAWLER_ACTIVE_HOURS_START");
+        var activeHoursEnd = GetOptionalTimeOfDayEnv("WEBCRAWLER_ACTIVE_HOURS_END");
         var autoFillFirstName = GetOptionalStringEnv("WEBCRAWLER_DEFAULT_FIRST_NAME", "Clovis");
         var autoFillLastName = GetOptionalStringEnv("WEBCRAWLER_DEFAULT_LAST_NAME", "Silva");
         var autoFillPhone = GetOptionalStringEnv("WEBCRAWLER_DEFAULT_PHONE", "11999999999");
@@ -88,20 +96,36 @@ partial class Program
         AutoFillDefaultCheckboxTrue = autoFillCheckboxTrue;
         AutoFillDefaultWorkAuthorization = autoFillWorkAuthorization;
         AutoFillDefaultNeedVisaSponsorship = autoFillNeedVisaSponsorship;
+        ConfigureHumanization(
+            interactionDelayMinMs,
+            interactionDelayMaxMs,
+            applyDelayMinMs,
+            applyDelayMaxMs,
+            paginationDelayMinMs,
+            paginationDelayMaxMs,
+            activeHoursStart,
+            activeHoursEnd);
 
         LoadIgnoredJobLinksFromDisk();
         LoadSuccessfulJobsFromDisk();
 
-        Console.WriteLine($"Configuração: TEST_MODE={testMode}, DISABLE_DATABASE={disableDatabase}, MAX_PAGES_PER_CYCLE={maxPagesPerCycle}, MAX_APPLY_PER_CYCLE={maxJobsToApplyPerCycle}, CYCLE_WAIT_MINUTES={cycleWaitMinutes}, PERSIST_IGNORED_LINKS={persistIgnoredLinks}, PERSIST_SUCCESSFUL_LINKS={persistSuccessfulLinks}, AUTO_FILL_MANDATORY_FIELDS={autoFillMandatoryFields}");
+        if (activeHoursStart.HasValue ^ activeHoursEnd.HasValue)
+        {
+            Console.WriteLine("Janela ativa ignorada: defina WEBCRAWLER_ACTIVE_HOURS_START e WEBCRAWLER_ACTIVE_HOURS_END em conjunto.");
+        }
+
+        Console.WriteLine($"Configuração: TEST_MODE={testMode}, DISABLE_DATABASE={disableDatabase}, MAX_PAGES_PER_CYCLE={maxPagesPerCycle}, MAX_APPLY_PER_CYCLE={maxJobsToApplyPerCycle}, CYCLE_WAIT_MINUTES={cycleWaitMinutes}, PERSIST_IGNORED_LINKS={persistIgnoredLinks}, PERSIST_SUCCESSFUL_LINKS={persistSuccessfulLinks}, AUTO_FILL_MANDATORY_FIELDS={autoFillMandatoryFields}, INTERACTION_DELAY_MS={InteractionDelayMinMs}-{InteractionDelayMaxMs}, APPLY_DELAY_MS={BetweenApplicationsDelayMinMs}-{BetweenApplicationsDelayMaxMs}, PAGINATION_DELAY_MS={PaginationDelayMinMs}-{PaginationDelayMaxMs}, ACTIVE_HOURS={DescribeActiveHoursWindow()}");
 
         while (true)
         {
+            WaitUntilWithinActiveHoursIfNeeded();
+            UpdateCrawlerRuntimeStatus("running", "Iniciando novo ciclo do crawler.");
             Console.WriteLine("Iniciando nova execução...");
 
             if (DatabaseEnabled && !ValidateDatabaseConnection())
             {
                 Console.WriteLine("Conexão com o banco indisponível. Aguardando 2 minuto(s) antes da próxima tentativa...");
-                Thread.Sleep(TimeSpan.FromMinutes(2));
+                SleepWithRuntimeHeartbeat(TimeSpan.FromMinutes(2), "waiting", "Banco indisponivel. Aguardando nova tentativa.");
                 continue;
             }
 
@@ -112,9 +136,11 @@ partial class Program
 
             if (!EnsureAuthenticatedSession(driver, wait, linkedinUsername, linkedinPassword))
             {
-                Thread.Sleep(TimeSpan.FromMinutes(1));
+                SleepWithRuntimeHeartbeat(TimeSpan.FromMinutes(1), "waiting", "Sessao nao autenticada. Aguardando antes de novo login.");
                 continue;
             }
+
+            UpdateCrawlerRuntimeStatus("running", "Sessao autenticada. Coletando e aplicando vagas.");
 
             string currentUrl = driver.Url;
             if (currentUrl.Contains("feed") || currentUrl.Contains("linkedin.com/in"))
@@ -126,16 +152,19 @@ partial class Program
                 Console.WriteLine("Login falhou ou ainda está na página de login.");
             }
 
-            Console.WriteLine("Abrindo coleção Easy Apply...");
-            driver.Navigate().GoToUrl(LinkedInEasyApplyCollectionUrl);
+            var collectionUrl = GetEasyApplyCollectionEntryUrlForCycle();
+            Console.WriteLine($"Abrindo coleção Easy Apply... {collectionUrl}");
+            driver.Navigate().GoToUrl(collectionUrl);
 
             if (!WaitForJobsResults(driver))
             {
                 Console.WriteLine("Não foi possível carregar a lista de vagas (timeout). Tentando novamente na próxima execução.");
                 driver.Quit();
-                Thread.Sleep(TimeSpan.FromMinutes(2));
+                SleepWithRuntimeHeartbeat(TimeSpan.FromMinutes(2), "waiting", "Falha ao carregar a lista de vagas. Aguardando nova tentativa.");
                 continue;
             }
+
+            HumanizeCollectionEntry(driver);
 
             var initialJobCards = FindJobCards(driver);
             Console.WriteLine($"Cards encontrados na página inicial: {initialJobCards.Count}");
@@ -190,7 +219,7 @@ partial class Program
             driver.Quit();
 
             Console.WriteLine($"Execução finalizada. Aguardando {cycleWaitMinutes} minuto(s) para próxima execução...");
-            Thread.Sleep(TimeSpan.FromMinutes(cycleWaitMinutes));
+            SleepWithRuntimeHeartbeat(TimeSpan.FromMinutes(cycleWaitMinutes), "waiting", $"Aguardando proximo ciclo por {cycleWaitMinutes} minuto(s).");
         }
     }
 }

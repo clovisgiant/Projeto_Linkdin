@@ -53,6 +53,28 @@ partial class Program
         return value.Trim();
     }
 
+    private static TimeSpan? GetOptionalTimeOfDayEnv(string name)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        var trimmed = value.Trim();
+        if (int.TryParse(trimmed, out var hour) && hour >= 0 && hour <= 23)
+        {
+            return TimeSpan.FromHours(hour);
+        }
+
+        if (TimeSpan.TryParse(trimmed, out var parsed) && parsed >= TimeSpan.Zero)
+        {
+            return new TimeSpan(parsed.Hours + (parsed.Days * 24), parsed.Minutes, parsed.Seconds);
+        }
+
+        return null;
+    }
+
     private static void LoadEnvFileIfExists()
     {
         var candidates = new[]
