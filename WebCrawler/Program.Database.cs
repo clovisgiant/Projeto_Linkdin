@@ -319,15 +319,18 @@ partial class Program
                 }
             }
 
+            MarkExhaustedJobsAsUnavailable(conn);
+
             using var cmd = new NpgsqlCommand(
-                @"SELECT DISTINCT link
+                @"SELECT link
                   FROM vagas
                   WHERE candidatura_simplificada = TRUE
                     AND COALESCE(candidatura_enviada, FALSE) = FALSE
                     AND COALESCE(candidatura_enviada_sucesso, FALSE) = FALSE
                     AND COALESCE(candidatura_indisponivel, FALSE) = FALSE
                     AND link IS NOT NULL
-                    AND link <> ''",
+                    AND link <> ''
+                  ORDER BY data_insercao DESC",
                 conn);
 
             using var reader = cmd.ExecuteReader();
@@ -559,6 +562,43 @@ partial class Program
         {
             Console.WriteLine($"Falha ao marcar vaga como indisponível: {ex.Message}");
             PrintDatabaseAuthenticationHint(ex);
+        }
+    }
+
+    // Marca automaticamente como indisponível (MAX_RETRY_EXCEEDED) vagas pendentes
+    // com 5 ou mais registros de falha em candidatura_etapas.
+    private static void MarkExhaustedJobsAsUnavailable(NpgsqlConnection conn)
+    {
+        try
+        {
+            using var cmd = new NpgsqlCommand(
+                @"UPDATE vagas
+                  SET candidatura_indisponivel = TRUE,
+                      motivo_indisponibilidade = 'MAX_RETRY_EXCEEDED',
+                      data_indisponibilidade = NOW()
+                  WHERE candidatura_simplificada = TRUE
+                    AND COALESCE(candidatura_enviada, FALSE) = FALSE
+                    AND COALESCE(candidatura_enviada_sucesso, FALSE) = FALSE
+                    AND COALESCE(candidatura_indisponivel, FALSE) = FALSE
+                    AND link IS NOT NULL
+                    AND link <> ''
+                    AND (
+                        SELECT COUNT(*)
+                        FROM candidatura_etapas ce
+                        WHERE ce.link = vagas.link
+                          AND ce.sucesso = FALSE
+                    ) >= 5",
+                conn);
+
+            var affected = cmd.ExecuteNonQuery();
+            if (affected > 0)
+            {
+                Console.WriteLine($"[BANCO] {affected} vaga(s) marcada(s) como MAX_RETRY_EXCEEDED (>=5 falhas em candidatura_etapas).");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[BANCO] Falha ao limpar vagas exauridas: {ex.Message}");
         }
     }
 }

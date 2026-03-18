@@ -214,6 +214,8 @@ partial class Program
             Console.WriteLine("Botão de candidatura simplificada não encontrado nesta vaga.");
             var diagnostics = SaveFailureDiagnostics(driver, link, "easy_apply_not_found");
             LogApplicationStep(link, "easy_apply_not_found", false, "Botão inicial Easy Apply não encontrado.", diagnostics.HtmlPath, diagnostics.ScreenshotPath);
+            IgnoreJobLinkInCurrentRun(link, "EASY_APPLY_NOT_FOUND");
+            MarkJobAsUnavailable(link, "EASY_APPLY_NOT_FOUND");
             return false;
         }
 
@@ -678,6 +680,12 @@ partial class Program
     {
         try
         {
+            if (maxJobsToProcess <= 0)
+            {
+                Console.WriteLine("Candidaturas automáticas desabilitadas para este ciclo (maxJobsToProcess <= 0).");
+                return;
+            }
+
             // Busca links de vagas simplificadas já persistidas no banco.
             var links = GetSimplifiedJobLinksFromDatabase();
             Console.WriteLine($"Total de links com candidatura simplificada no banco: {links.Count}");
@@ -803,6 +811,12 @@ partial class Program
     {
         try
         {
+            if (maxJobsToProcess <= 0)
+            {
+                Console.WriteLine("Candidaturas automáticas desabilitadas para este ciclo (maxJobsToProcess <= 0).");
+                return;
+            }
+
             Console.WriteLine($"Total de links para candidatura direta: {links.Count}");
             var wait = new WebDriverWait(driver, TimeSpan.FromSeconds(25));
             int processedJobs = 0;
