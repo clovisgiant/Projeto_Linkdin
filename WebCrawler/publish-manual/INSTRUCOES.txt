@@ -1,0 +1,105 @@
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                    WEBCRAWLER - GUIA DE EXECUÇÃO MANUAL                      ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+📁 LOCALIZAÇÃO
+═════════════════════════════════════════════════════════════════════════════
+Pasta: C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\
+
+🚀 COMO EXECUTAR
+═════════════════════════════════════════════════════════════════════════════
+Opção 1 (Recomendado):
+  → Duplo clique em 'EXECUTAR_CRAWLER.bat'
+
+Opção 2 (Command Line):
+  → Abra CMD ou PowerShell nesta pasta
+  → Digite: WebCrawler.exe
+
+📊 O QUE MONITORAR
+═════════════════════════════════════════════════════════════════════════════
+
+1. TAXA DE SUCESSO
+   Observar: "candidatura_enviada_sucesso" aumentando na console
+   
+   Esperado: Pelo menos 10-15 vagas/hora com a nova config
+
+2. VARIAÇÃO MAX_RETRY_EXCEEDED
+   Observar: "BANCO] X vaga(s) marcada(s) como MAX_RETRY_EXCEEDED (>=12 falhas"
+   
+   Antes: Bloqueava com 5 falhas
+   Depois: Agora com 12 falhas = menos vagas perdidas
+
+3. ERROS MAIS FREQUENTES
+   Procure na console por:
+   - "popup_contact_info_not_found" → Popup não apareceu (LinkedIn throttling?)
+   - "apply_flow_not_ready_after_easy_apply" → Fluxo travou
+   - "next_clicked_but_not_progressed" → Clique não funcionou
+   
+   Se um erro > 30% das tentativas = precisa ajustar timing ou seletor
+
+4. BLOQUEIOS DO LINKEDIN
+   Procure: "Easy Apply button não encontrado" ou "Rate limited"
+   Se muito frequente = aumentar delay entre aplicações (APPLY_DELAY_MS)
+
+⏰ TEMPO DE EXECUÇÃO
+═════════════════════════════════════════════════════════════════════════════
+◆ Primeira execução: 30-45 min (verifica 300-400 vagas)
+◆ Próximas: Depende de CYCLE_WAIT_MINUTES (padrão: 10-15 min)
+
+🔍 INDICADORES DO PAINEL ESPERADOS
+═════════════════════════════════════════════════════════════════════════════
+Com a mudança (>=12 em vez de >=5):
+
+ANTES:
+  Total: 1.164 | Sucesso: 128 | Indisponíveis: 134 | Pendentes: 902
+
+ESPERADO APÓS 5 CICLOS:
+  Total: 1.164 | Sucesso: 180-200 ↑ | Indisponíveis: 100-110 ↓ | Pendentes: 850-870 ↓
+
+📝 LOGS IMPORTANTES NA CONSOLE
+═════════════════════════════════════════════════════════════════════════════
+Procure por estas mensagens:
+
+✓ "[CICLO] Iniciando busca sequencial por competências" 
+  → Ciclo começou, está buscando vagas
+
+✓ "[BANCO] X vaga(s) candidatura enviada com sucesso"
+  → Vagas foram enviadas, conta para sucesso
+
+✓ "Candidatura enviada com sucesso para:"
+  → Aplicação individual bem-sucedida
+
+⚠ "Fluxo de candidatura não ficou pronto no tempo esperado"
+  → Timeout - vaga entrou em retry (não é falha, é tentativa normal)
+
+✗ "Vaga com etapas obrigatórias adicionais detectada"
+  → Vaga pulada por ter perguntas adicionais (esperado)
+
+🛠️ VARIÁVEIS DE AMBIENTE (se precisar ajustar)
+═════════════════════════════════════════════════════════════════════════════
+Antes de rodar, você pode setar no CMD:
+
+  set WEBCRAWLER_MAX_JOBS_APPLY_PER_CYCLE=30
+  set WEBCRAWLER_CYCLE_WAIT_MINUTES=5
+  set WEBCRAWLER_INTERACTION_DELAY_MS=500-800
+
+Depois execute o crawler:
+  WebCrawler.exe
+
+📞 TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════
+Problema: Crawler fecha logo depois de iniciar
+  → Verifique se banco de dados está acessível
+  → Confira string de conexão (CONNECTION_STRING env var)
+
+Problema: Pouquíssimas aplicações (<5/hora)
+  → LinkedIn pode estar throttling
+  → Aumente INTERACTION_DELAY_MS para 1000-1500
+
+Problema: Muitas "apply_flow_not_ready"
+  → Aumentar timeout: WEBCRAWLER_BROWSER_WAIT_TIMEOUT_MS=15000
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Última alteração: 19/03/2026 - MAX_RETRY aumentado de 5 para 12 tentativas
+Objetivo: Recuperar vagas com falhas temporárias antes de desistir
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

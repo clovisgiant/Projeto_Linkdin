@@ -1,0 +1,154 @@
+{
+  "runtimeTarget": {
+    "name": ".NETCoreApp,Version=v8.0",
+    "signature": ""
+  },
+  "compilationOptions": {},
+  "targets": {
+    ".NETCoreApp,Version=v8.0": {
+      "WebCrawler/1.0.0": {
+        "dependencies": {
+          "HtmlAgilityPack": "1.12.3",
+          "Npgsql": "9.0.3",
+          "Selenium.Support": "4.35.0",
+          "Selenium.WebDriver": "4.35.0",
+          "Selenium.WebDriver.ChromeDriver": "140.0.7339.18500"
+        },
+        "runtime": {
+          "WebCrawler.dll": {}
+        }
+      },
+      "HtmlAgilityPack/1.12.3": {
+        "runtime": {
+          "lib/net7.0/HtmlAgilityPack.dll": {
+            "assemblyVersion": "1.12.3.0",
+            "fileVersion": "1.12.3.0"
+          }
+        }
+      },
+      "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.DependencyInjection.Abstractions.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "Microsoft.Extensions.Logging.Abstractions/8.0.2": {
+        "dependencies": {
+          "Microsoft.Extensions.DependencyInjection.Abstractions": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Microsoft.Extensions.Logging.Abstractions.dll": {
+            "assemblyVersion": "8.0.0.0",
+            "fileVersion": "8.0.1024.46610"
+          }
+        }
+      },
+      "Npgsql/9.0.3": {
+        "dependencies": {
+          "Microsoft.Extensions.Logging.Abstractions": "8.0.2"
+        },
+        "runtime": {
+          "lib/net8.0/Npgsql.dll": {
+            "assemblyVersion": "9.0.3.0",
+            "fileVersion": "9.0.3.0"
+          }
+        }
+      },
+      "Selenium.Support/4.35.0": {
+        "dependencies": {
+          "Selenium.WebDriver": "4.35.0"
+        },
+        "runtime": {
+          "lib/netstandard2.0/WebDriver.Support.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.0"
+          }
+        }
+      },
+      "Selenium.WebDriver/4.35.0": {
+        "runtime": {
+          "lib/net8.0/WebDriver.dll": {
+            "assemblyVersion": "4.0.0.0",
+            "fileVersion": "4.0.0.0"
+          }
+        },
+        "runtimeTargets": {
+          "runtimes/linux/native/selenium-manager": {
+            "rid": "linux",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/osx/native/selenium-manager": {
+            "rid": "osx",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          },
+          "runtimes/win/native/selenium-manager.exe": {
+            "rid": "win",
+            "assetType": "native",
+            "fileVersion": "0.0.0.0"
+          }
+        }
+      },
+      "Selenium.WebDriver.ChromeDriver/140.0.7339.18500": {}
+    }
+  },
+  "libraries": {
+    "WebCrawler/1.0.0": {
+      "type": "project",
+      "serviceable": false,
+      "sha512": ""
+    },
+    "HtmlAgilityPack/1.12.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-NyckYLSQBI5fB9YH5XN94EGfidD5FgaKnfmGqApKQYBaf3fFmv9KGodl5kvUZg/QLz+/M4rE7vwUig25eA8PqQ==",
+      "path": "htmlagilitypack/1.12.3",
+      "hashPath": "htmlagilitypack.1.12.3.nupkg.sha512"
+    },
+    "Microsoft.Extensions.DependencyInjection.Abstractions/8.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-3iE7UF7MQkCv1cxzCahz+Y/guQbTqieyxyaWKhrRO91itI9cOKO76OHeQDahqG4MmW5umr3CcCvGmK92lWNlbg==",
+      "path": "microsoft.extensions.dependencyinjection.abstractions/8.0.2",
+      "hashPath": "microsoft.extensions.dependencyinjection.abstractions.8.0.2.nupkg.sha512"
+    },
+    "Microsoft.Extensions.Logging.Abstractions/8.0.2": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-nroMDjS7hNBPtkZqVBbSiQaQjWRDxITI8Y7XnDs97rqG3EbzVTNLZQf7bIeUJcaHOV8bca47s1Uxq94+2oGdxA==",
+      "path": "microsoft.extensions.logging.abstractions/8.0.2",
+      "hashPath": "microsoft.extensions.logging.abstractions.8.0.2.nupkg.sha512"
+    },
+    "Npgsql/9.0.3": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-tPvY61CxOAWxNsKLEBg+oR646X4Bc8UmyQ/tJszL/7mEmIXQnnBhVJZrZEEUv0Bstu0mEsHZD5At3EO8zQRAYw==",
+      "path": "npgsql/9.0.3",
+      "hashPath": "npgsql.9.0.3.nupkg.sha512"
+    },
+    "Selenium.Support/4.35.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-K6DiLdDQNDSWI/zh14bk9vRjW8vEX2mhMI2Cq8bD72FM5rOnLhQwZABJHrWCZ3U1wb7KFFd7iQeUhvpyHVt2AA==",
+      "path": "selenium.support/4.35.0",
+      "hashPath": "selenium.support.4.35.0.nupkg.sha512"
+    },
+    "Selenium.WebDriver/4.35.0": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-C9OrObS2KLyUQDJNRY883JAc4n5q58pBYmY954hf+lGMQQcsz4Ias2mk91lHkLXFX+2qMttya4df9lGP1SLiGQ==",
+      "path": "selenium.webdriver/4.35.0",
+      "hashPath": "selenium.webdriver.4.35.0.nupkg.sha512"
+    },
+    "Selenium.WebDriver.ChromeDriver/140.0.7339.18500": {
+      "type": "package",
+      "serviceable": true,
+      "sha512": "sha512-VJf23sZPg/9hI0jdETiU368FVGmaChGJzOsMdpcTu+/Cqmxkusq4PyKOlQYDWPYmTHYIxabMs6HqclrM7sVQLw==",
+      "path": "selenium.webdriver.chromedriver/140.0.7339.18500",
+      "hashPath": "selenium.webdriver.chromedriver.140.0.7339.18500.nupkg.sha512"
+    }
+  }
+}

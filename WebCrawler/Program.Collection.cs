@@ -76,6 +76,42 @@ partial class Program
         return (rawLines, structuredJobs);
     }
 
+    private static bool TryCollectJobsFromCurrentResults(
+        IWebDriver driver,
+        WebDriverWait wait,
+        List<string> allJobsLines,
+        List<(string Titulo, string Empresa, string Localizacao, string Link)> allJobsData,
+        int maxPagesPerCycle,
+        string sourceLabel)
+    {
+        if (!WaitForJobsResults(driver))
+        {
+            Console.WriteLine($"Nao foi possivel carregar a lista de vagas para {sourceLabel} (timeout).");
+            return false;
+        }
+
+        HumanizeCollectionEntry(driver);
+
+        var initialJobCards = FindJobCards(driver);
+        Console.WriteLine($"Cards encontrados na pagina inicial para {sourceLabel}: {initialJobCards.Count}");
+
+        Console.WriteLine($"Extraindo vagas da pagina inicial para {sourceLabel}...");
+        var initialExtraction = ExtractSimplifiedJobs(initialJobCards);
+
+        foreach (var job in initialExtraction.RawLines)
+        {
+            Console.WriteLine(job);
+        }
+
+        allJobsLines.AddRange(initialExtraction.RawLines);
+        allJobsData.AddRange(initialExtraction.StructuredJobs);
+
+        CollectJobsFromPagination(driver, wait, allJobsLines, allJobsData, maxPagesPerCycle);
+
+        Console.WriteLine($"Coleta concluida para {sourceLabel}. Total bruto acumulado: {allJobsData.Count}");
+        return true;
+    }
+
     private static void CollectJobsFromPagination(
         IWebDriver driver,
         WebDriverWait wait,

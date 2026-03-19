@@ -212,6 +212,155 @@ button:disabled {
   margin-top: 2px;
 }
 
+.runtime-indicator {
+  min-width: clamp(160px, 18vw, 220px);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.runtime-clock {
+  width: clamp(120px, 14vw, 170px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  position: relative;
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 0 0 1px rgba(19, 35, 56, 0.16), 0 12px 24px -20px rgba(19, 35, 56, 0.42);
+  overflow: hidden;
+}
+
+.runtime-clock-ring {
+  position: absolute;
+  inset: 11%;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+  opacity: 0.4;
+}
+
+.runtime-clock-hand {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform-origin: 50% 100%;
+  border-radius: 999px;
+  background: currentColor;
+  opacity: 0.88;
+}
+
+.runtime-clock-hand-hour {
+  width: 5px;
+  height: 26%;
+  margin-left: -2.5px;
+  margin-top: -26%;
+  transform: rotate(30deg);
+}
+
+.runtime-clock-hand-minute {
+  width: 3px;
+  height: 36%;
+  margin-left: -1.5px;
+  margin-top: -36%;
+  transform: rotate(200deg);
+}
+
+.runtime-clock-hub {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: currentColor;
+  z-index: 2;
+}
+
+.runtime-clock-code {
+  position: absolute;
+  bottom: 22%;
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-size: clamp(12px, 1.3vw, 14px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  z-index: 2;
+}
+
+.runtime-title {
+  margin: 2px 0 0;
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-size: 15px;
+}
+
+.runtime-detail {
+  margin: 0;
+  font-size: 12px;
+  max-width: 230px;
+  line-height: 1.35;
+  color: #36546a;
+}
+
+.runtime-running {
+  color: #155e35;
+}
+
+.runtime-running .runtime-clock {
+  background: radial-gradient(circle at 28% 24%, rgba(234, 255, 243, 0.96), rgba(27, 127, 69, 0.26) 58%);
+}
+
+.runtime-running .runtime-clock-hand-minute {
+  animation: runtime-spin-fast 7s linear infinite;
+}
+
+.runtime-running .runtime-clock-hand-hour {
+  animation: runtime-spin-slow 26s linear infinite;
+}
+
+.runtime-waiting {
+  color: #8b5300;
+}
+
+.runtime-waiting .runtime-clock {
+  background: radial-gradient(circle at 28% 24%, rgba(255, 248, 228, 0.97), rgba(181, 110, 0, 0.24) 58%);
+  animation: runtime-breathe 2.8s ease-in-out infinite;
+}
+
+.runtime-waiting .runtime-clock-hand-minute {
+  animation: runtime-step 11s steps(11, end) infinite;
+}
+
+.runtime-offline {
+  color: #5f6f7d;
+}
+
+.runtime-offline .runtime-clock {
+  background: radial-gradient(circle at 28% 24%, rgba(245, 249, 252, 0.96), rgba(95, 111, 125, 0.18) 58%);
+}
+
+.runtime-offline .runtime-clock-hand-hour,
+.runtime-offline .runtime-clock-hand-minute {
+  opacity: 0.55;
+}
+
+@keyframes runtime-spin-fast {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes runtime-spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes runtime-step {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes runtime-breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.035); }
+}
+
 .chart-and-legend {
   display: flex;
   align-items: center;
@@ -287,6 +436,298 @@ button:disabled {
   background: #b56e00;
 }
 
+.trend-panel {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  border: 1px solid rgba(0, 109, 119, 0.24);
+  background: linear-gradient(170deg, rgba(255, 255, 255, 0.9), rgba(221, 241, 244, 0.72));
+  box-shadow: var(--shadow);
+  padding: 16px;
+}
+
+.trend-panel::after {
+  content: "";
+  position: absolute;
+  inset: auto -80px -120px auto;
+  width: 280px;
+  height: 280px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(244, 162, 97, 0.26), rgba(244, 162, 97, 0));
+  pointer-events: none;
+}
+
+.trend-header {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.trend-subtitle {
+  margin: 0;
+  color: #3c5f75;
+  font-size: 13px;
+}
+
+.trend-controls {
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.trend-range-btn {
+  border-radius: 999px;
+  border: 1px solid rgba(11, 114, 133, 0.3);
+  background: rgba(255, 255, 255, 0.8);
+  color: #1f4257;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 7px 12px;
+}
+
+.trend-range-btn:hover:not(:disabled) {
+  transform: none;
+  filter: none;
+  background: rgba(11, 114, 133, 0.14);
+}
+
+.trend-range-btn.is-active {
+  border-color: #0b7285;
+  background: #0b7285;
+  color: #ebf9ff;
+  box-shadow: 0 10px 16px -14px rgba(11, 114, 133, 0.7);
+}
+
+.trend-comparison-grid {
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.trend-comparison-card {
+  border: 1px solid rgba(19, 35, 56, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.86);
+  padding: 10px;
+}
+
+.trend-metric-label {
+  margin: 0;
+  color: #4d6273;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trend-metric-value {
+  display: block;
+  margin-top: 5px;
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-size: 22px;
+  color: #163749;
+}
+
+.trend-metric-delta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.trend-metric-delta.delta-up {
+  color: #0f6f81;
+}
+
+.trend-metric-delta.delta-down {
+  color: #9a5211;
+}
+
+.trend-metric-delta.delta-flat {
+  color: #415b70;
+}
+
+.trend-metric-delta.delta-na {
+  color: #6a7d8d;
+}
+
+.trend-footnote {
+  margin: 8px 0 0;
+  color: #5d7285;
+  font-size: 12px;
+  font-weight: 600;
+  position: relative;
+  z-index: 1;
+}
+
+.line-chart-wrap {
+  margin-top: 10px;
+  position: relative;
+  z-index: 1;
+  border-radius: 14px;
+  border: 1px solid rgba(19, 35, 56, 0.12);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(2px);
+  padding: 8px;
+}
+
+.line-chart {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.chart-grid-line {
+  stroke: rgba(19, 35, 56, 0.14);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.chart-grid-label,
+.chart-x-label {
+  fill: #5a7083;
+  font-family: "Archivo", "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.chart-total-area {
+  fill: url(#total-area-fill);
+}
+
+.line-path {
+  fill: none;
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1200;
+  stroke-dashoffset: 1200;
+  animation: line-reveal 1s ease forwards;
+}
+
+.line-path.series-total {
+  stroke: #0b7285;
+}
+
+.line-path.series-success {
+  stroke: #1b7f45;
+  animation-delay: 0.08s;
+}
+
+.line-path.series-unavailable {
+  stroke: #b12a42;
+  animation-delay: 0.16s;
+}
+
+.line-path.series-pending {
+  stroke: #b56e00;
+  animation-delay: 0.24s;
+}
+
+.line-point {
+  stroke: #ffffff;
+  stroke-width: 1.4;
+}
+
+.line-point.series-total-point {
+  fill: #0b7285;
+}
+
+.line-point.series-success-point {
+  fill: #1b7f45;
+}
+
+.line-point.series-unavailable-point {
+  fill: #b12a42;
+}
+
+.line-point.series-pending-point {
+  fill: #b56e00;
+}
+
+.chart-hover-target {
+  fill: transparent;
+  cursor: crosshair;
+}
+
+.chart-hover-line {
+  stroke: rgba(19, 35, 56, 0.42);
+  stroke-width: 1.4;
+  stroke-dasharray: 5 5;
+}
+
+.chart-active-point {
+  stroke: #ffffff;
+  stroke-width: 2;
+}
+
+.chart-tooltip-box {
+  fill: rgba(13, 36, 55, 0.93);
+  stroke: rgba(199, 224, 239, 0.35);
+  stroke-width: 1;
+}
+
+.chart-tooltip-title {
+  fill: #f0faff;
+  font-family: "Space Grotesk", "Trebuchet MS", sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.chart-tooltip-row {
+  fill: #d7e9f5;
+  font-family: "Archivo", "Segoe UI", sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.line-legend {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  position: relative;
+  z-index: 1;
+}
+
+.line-legend li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 8px;
+  align-items: center;
+  border: 1px solid rgba(19, 35, 56, 0.1);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.82);
+  padding: 8px 10px;
+  color: #223f53;
+  font-size: 13px;
+}
+
+.line-legend strong {
+  font-size: 14px;
+}
+
+.legend-line {
+  width: 16px;
+  height: 4px;
+  border-radius: 999px;
+}
+
+.legend-total {
+  background: #0b7285;
+}
+
+@keyframes line-reveal {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .panel {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -355,6 +796,55 @@ button:disabled {
 
 .pager-btn:disabled {
   opacity: 0.4;
+}
+
+.job-action-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(0, 109, 119, 0.35);
+  background: linear-gradient(135deg, rgba(0, 109, 119, 0.18), rgba(27, 127, 69, 0.2));
+  color: #103243;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 11px;
+  white-space: nowrap;
+}
+
+.job-action-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, rgba(0, 109, 119, 0.26), rgba(27, 127, 69, 0.3));
+}
+
+.job-action-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.job-copy-btn {
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 56, 0.2);
+  background: #ffffff;
+  color: #1d374c;
+  font-weight: 700;
+  font-size: 12px;
+  padding: 7px 10px;
+  white-space: nowrap;
+}
+
+.job-copy-btn:hover:not(:disabled) {
+  background: rgba(0, 109, 119, 0.08);
+}
+
+.job-copy-btn.is-success {
+  border-color: rgba(27, 127, 69, 0.35);
+  color: #14522f;
+  background: rgba(27, 127, 69, 0.12);
+}
+
+.job-copy-btn.is-error {
+  border-color: rgba(177, 42, 66, 0.4);
+  color: #7a182d;
+  background: rgba(177, 42, 66, 0.12);
 }
 
 .pagination-page {
@@ -517,8 +1007,22 @@ tr:nth-child(even) td {
     align-items: flex-start;
   }
 
+  .runtime-indicator {
+    width: 100%;
+    align-items: flex-start;
+    text-align: left;
+  }
+
   .chart-and-legend {
     width: 100%;
+  }
+
+  .trend-comparison-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .line-legend {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .pie-legend {
@@ -536,9 +1040,26 @@ tr:nth-child(even) td {
     grid-template-columns: 1fr;
   }
 
+  .runtime-indicator {
+    align-items: center;
+    text-align: center;
+  }
+
   .chart-and-legend {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .line-chart-wrap {
+    padding: 6px;
+  }
+
+  .trend-comparison-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .line-legend {
+    grid-template-columns: 1fr;
   }
 
   .table-pagination {

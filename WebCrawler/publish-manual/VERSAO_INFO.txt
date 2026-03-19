@@ -1,0 +1,34 @@
+╔════════════════════════════════════════════════════════════════╗
+║         WEBCRAWLER - VERSÕES DISPONÍVEIS                        ║
+╚════════════════════════════════════════════════════════════════╝
+
+📦 VERSÃO COMPILADA: 19/03/2026 09:34:50
+═════════════════════════════════════════════════════════════════
+
+✅ C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\
+   bin\Release\net8.0\win-x64\publish\
+   
+   ➜ WebCrawler.exe (ATUALIZADO - com MAX_RETRY=12)
+   
+   Mudanças incluídas:
+   • MAX_RETRY_EXCEEDED aumentado de 5 para 12 tentativas
+   • Permite mais recuperação antes de marcar como indisponível
+   • Reduz falsos positivos por timeout/popup não apareceu
+
+📁 PASTA DE TRABALHO
+═════════════════════════════════════════════════════════════════
+C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\
+
+• Cópia criada para facilitar execução manual
+• Também com versão atualizada (09:34)
+• Inclui EXECUTAR_CRAWLER.bat para duplo clique
+
+🚀 PRÓXIMO PASSO
+═════════════════════════════════════════════════════════════════
+Pode usar qualquer uma das pastas acima para rodar.
+
+Recomendação: Use publish-manual (mais fácil de encontrar)
+
+C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\EXECUTAR_CRAWLER.bat
+
+════════════════════════════════════════════════════════════════

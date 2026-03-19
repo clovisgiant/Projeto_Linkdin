@@ -1,0 +1,42 @@
+{
+  "expo": {
+    "name": "AppLinkdin Mobile",
+    "slug": "applinkdin-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "applinkdinmobile",
+    "userInterfaceStyle": "light",
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.applinkdin.mobile"
+    },
+    "android": {
+      "package": "com.applinkdin.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-dev-client"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "a5f98655-8331-43e5-963b-9dd725819a9e"
+      }
+    }
+  }
+}

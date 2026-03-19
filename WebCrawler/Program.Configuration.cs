@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 partial class Program
 {
@@ -51,6 +53,30 @@ partial class Program
         }
 
         return value.Trim();
+    }
+
+    private static List<string> GetOptionalCsvEnvList(string name, params string[] defaultValues)
+    {
+        var value = Environment.GetEnvironmentVariable(name);
+        IEnumerable<string> source = defaultValues;
+
+        if (!string.IsNullOrWhiteSpace(value))
+        {
+            source = value.Split(new[] { ',', ';', '|' }, StringSplitOptions.RemoveEmptyEntries);
+        }
+
+        var parsed = source
+            .Select(item => item?.Trim() ?? string.Empty)
+            .Where(item => !string.IsNullOrWhiteSpace(item))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .ToList();
+
+        if (parsed.Count == 0)
+        {
+            parsed.Add("PHP");
+        }
+
+        return parsed;
     }
 
     private static TimeSpan? GetOptionalTimeOfDayEnv(string name)

@@ -566,7 +566,8 @@ partial class Program
     }
 
     // Marca automaticamente como indisponível (MAX_RETRY_EXCEEDED) vagas pendentes
-    // com 5 ou mais registros de falha em candidatura_etapas.
+    // com 12 ou mais registros de falha em candidatura_etapas.
+    // Limiar aumentado de 5 para 12 para evitar falsos positivos e dar mais chance de recuperação.
     private static void MarkExhaustedJobsAsUnavailable(NpgsqlConnection conn)
     {
         try
@@ -587,13 +588,13 @@ partial class Program
                         FROM candidatura_etapas ce
                         WHERE ce.link = vagas.link
                           AND ce.sucesso = FALSE
-                    ) >= 5",
+                    ) >= 12",
                 conn);
 
             var affected = cmd.ExecuteNonQuery();
             if (affected > 0)
             {
-                Console.WriteLine($"[BANCO] {affected} vaga(s) marcada(s) como MAX_RETRY_EXCEEDED (>=5 falhas em candidatura_etapas).");
+                Console.WriteLine($"[BANCO] {affected} vaga(s) marcada(s) como MAX_RETRY_EXCEEDED (>=12 falhas em candidatura_etapas).");
             }
         }
         catch (Exception ex)

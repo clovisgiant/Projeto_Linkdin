@@ -102,6 +102,15 @@ const pool = new Pool(withDockerHostFallback(parseConnectionValue(rawConnectionV
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use("/api", (_req, res, next) => {
+  res.set({
+    "Cache-Control": "no-store, no-cache, must-revalidate, proxy-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+    "Surrogate-Control": "no-store"
+  });
+  next();
+});
 
 function normalizeSummary(row) {
   if (!row) {
@@ -121,6 +130,30 @@ function normalizeSummary(row) {
     indisponiveis: Number(row.indisponiveis || 0),
     pendentes: Number(row.pendentes || 0)
   };
+}
+
+function normalizeTimeline(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+
+  return rows
+    .map((row) => {
+      const date = new Date(row?.day ?? "");
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+
+      return {
+        day: date.toISOString(),
+        total: Number(row?.total || 0),
+        sucesso: Number(row?.sucesso || 0),
+        indisponiveis: Number(row?.indisponiveis || 0),
+        pendentes: Number(row?.pendentes || 0)
+      };
+    })
+    .filter(Boolean)
+    .sort((a, b) => new Date(a.day).getTime() - new Date(b.day).getTime());
 }
 
 async function queryRows(sqlText, values = []) {
@@ -176,10 +209,17 @@ app.get("/api/crawler-status", async (_req, res) => {
     let lastActivity = null;
     try {
       const rows = await queryRows(`
-        SELECT GREATEST(
-          (SELECT MAX(criado_em) FROM candidatura_etapas),
-          (SELECT MAX(data_insercao) FROM vagas)
-        ) AS last_activity;
+        WITH activity_events AS (
+          SELECT MAX(criado_em) AS happened_at FROM candidatura_etapas
+          UNION ALL
+          SELECT MAX(data_insercao) AS happened_at FROM vagas
+          UNION ALL
+          SELECT MAX(last_heartbeat) AS happened_at
+          FROM crawler_runtime_status
+          WHERE instance_name = 'default'
+        )
+        SELECT MAX(happened_at) AS last_activity
+        FROM activity_events;
       `);
       lastActivity = rows[0]?.last_activity ?? null;
     } catch { /* banco pode estar inacessivel */ }
@@ -198,10 +238,10 @@ app.get("/api/crawler-status", async (_req, res) => {
     const heartbeatFresh = heartbeatMinutesSince !== null && heartbeatMinutesSince <= 2.5;
 
     let state;
-    if (tasklistRunning) {
-      state = minutesSince !== null && minutesSince <= 3 ? "running" : "waiting";
-    } else if (heartbeatFresh && heartbeatState) {
+    if (heartbeatFresh && heartbeatState) {
       state = heartbeatState;
+    } else if (tasklistRunning) {
+      state = minutesSince !== null && minutesSince <= 3 ? "running" : "waiting";
     } else if (minutesSince !== null && minutesSince <= 3) {
       state = "running";
     } else if (minutesSince !== null && minutesSince <= 60) {
@@ -214,7 +254,7 @@ app.get("/api/crawler-status", async (_req, res) => {
       state,
       running: tasklistRunning || heartbeatFresh,
       lastActivity,
-      minutesSinceActivity: minutesSince ? Math.round(minutesSince) : null,
+      minutesSinceActivity: minutesSince !== null ? Math.round(minutesSince) : null,
       heartbeatState,
       heartbeatDetail: heartbeat?.detail ?? null,
       heartbeatAt: heartbeat?.last_heartbeat ?? null,
@@ -236,7 +276,7 @@ app.get("/api/health", async (_req, res) => {
 
 app.get("/api/dashboard", async (_req, res) => {
   try {
-    const [summaryRows, successfulJobs, unavailableJobs, pendingConfirmation, recentSteps] = await Promise.all([
+    const [summaryRows, successfulJobs, unavailableJobs, pendingConfirmation, recentSteps, timelineRows] = await Promise.all([
       queryRows(`
         SELECT
           COUNT(*) AS total,
@@ -289,6 +329,52 @@ app.get("/api/dashboard", async (_req, res) => {
         FROM candidatura_etapas
         ORDER BY criado_em DESC
         LIMIT 80;
+      `),
+      queryRows(`
+        WITH bounds AS (
+          SELECT
+            COALESCE(DATE_TRUNC('day', MIN(data_insercao)), DATE_TRUNC('day', NOW()))::date AS first_day,
+            DATE_TRUNC('day', NOW())::date AS last_day
+          FROM vagas
+        ),
+        series AS (
+          SELECT generate_series(
+            GREATEST((SELECT first_day FROM bounds), ((SELECT last_day FROM bounds) - INTERVAL '59 day')::date),
+            (SELECT last_day FROM bounds),
+            INTERVAL '1 day'
+          )::date AS day
+        )
+        SELECT
+          series.day,
+          (
+            SELECT COUNT(*)
+            FROM vagas
+            WHERE DATE(data_insercao) <= series.day
+          ) AS total,
+          (
+            SELECT COUNT(*)
+            FROM vagas
+            WHERE candidatura_enviada_sucesso = TRUE
+              AND DATE(COALESCE(data_envio_sucesso, data_candidatura, data_insercao)) <= series.day
+          ) AS sucesso,
+          (
+            SELECT COUNT(*)
+            FROM vagas
+            WHERE candidatura_indisponivel = TRUE
+              AND DATE(COALESCE(data_indisponibilidade, data_candidatura, data_insercao)) <= series.day
+          ) AS indisponiveis,
+          (
+            SELECT COUNT(*)
+            FROM vagas
+            WHERE DATE(data_insercao) <= series.day
+              AND NOT candidatura_indisponivel
+              AND (
+                NOT candidatura_enviada_sucesso
+                OR DATE(COALESCE(data_envio_sucesso, data_candidatura, data_insercao)) > series.day
+              )
+          ) AS pendentes
+        FROM series
+        ORDER BY series.day;
       `)
     ]);
 
@@ -298,7 +384,8 @@ app.get("/api/dashboard", async (_req, res) => {
       successfulJobs,
       unavailableJobs,
       pendingConfirmation,
-      recentSteps
+      recentSteps,
+      timeline: normalizeTimeline(timelineRows)
     });
   } catch (error) {
     console.error("[API] dashboard error", error);

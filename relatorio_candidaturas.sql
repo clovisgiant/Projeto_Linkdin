@@ -5,11 +5,7 @@
 
 \echo ''
 \echo '=== CANDIDATURAS ENVIADAS COM SUCESSO ==='
-SELECT titulo, empresa, localizacao,
-       to_char(data_envio_sucesso, 'DD/MM/YYYY HH24:MI') AS enviada_em
-FROM vagas
-WHERE candidatura_enviada_sucesso = TRUE
-ORDER BY data_envio_sucesso DESC;
+c
 
 \echo ''
 \echo '=== VAGAS INDISPONIVEIS / BLOQUEADAS ==='

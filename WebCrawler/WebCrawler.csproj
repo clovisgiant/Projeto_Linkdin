@@ -15,4 +15,26 @@
     <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="140.0.7339.18500" />
   </ItemGroup>
 
+  <Target Name="CopyRootEnvToPublish" AfterTargets="Publish">
+    <PropertyGroup>
+      <RootEnvFile>$(MSBuildProjectDirectory)\..\.env</RootEnvFile>
+      <PublishEnvFile>$(PublishDir).env</PublishEnvFile>
+    </PropertyGroup>
+
+    <Message
+      Importance="high"
+      Text="Sincronizando .env de $(RootEnvFile) para $(PublishEnvFile)."
+      Condition="Exists('$(RootEnvFile)')" />
+
+    <Copy
+      SourceFiles="$(RootEnvFile)"
+      DestinationFiles="$(PublishEnvFile)"
+      OverwriteReadOnlyFiles="true"
+      Condition="Exists('$(RootEnvFile)')" />
+
+    <Warning
+      Text=".env raiz nao encontrado em $(RootEnvFile)."
+      Condition="!Exists('$(RootEnvFile)')" />
+  </Target>
+
 </Project>

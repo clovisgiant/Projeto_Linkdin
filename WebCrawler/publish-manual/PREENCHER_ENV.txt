@@ -1,0 +1,125 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║           CONFIGURAÇÃO - VARIÁVEIS DE AMBIENTE (.env)                      ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+📝 PASSO 1: EDITAR O ARQUIVO .env
+═════════════════════════════════════════════════════════════════════════════
+
+Abra o arquivo:
+C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\.env
+
+Com um editor de texto (Notepad, VS Code, etc.)
+
+
+🔐 PASSO 2: PREENCHER DADOS OBRIGATÓRIOS
+═════════════════════════════════════════════════════════════════════════════
+
+1️⃣  LINKEDIN_USERNAME
+    ├─ Seu email ou usuário do LinkedIn
+    ├─ Exemplo: seu_email@gmail.com
+    └─ Encontre a linha:
+       LINKEDIN_USERNAME=seu_email_ou_usuario_linkedin
+       ↓ Mude para:
+       LINKEDIN_USERNAME=seu_email@gmail.com
+
+2️⃣  LINKEDIN_PASSWORD
+    ├─ Sua senha do LinkedIn
+    ├─ ⚠️  NÃO use senha com aspas
+    └─ Encontre a linha:
+       LINKEDIN_PASSWORD=sua_senha_linkedin
+       ↓ Mude para:
+       LINKEDIN_PASSWORD=MinhaS3nh@LinkedIn
+
+3️⃣  WEBCRAWLER_DB_CONNECTION
+    ├─ String de conexão com banco PostgreSQL
+    ├─ Formato: User ID=user;Password=pass;Host=localhost;Port=5432;Database=db;
+    ├─ Se você não mudou nada, use:
+    │  User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=crawler;
+    └─ Encontre a linha:
+       WEBCRAWLER_DB_CONNECTION=User ID=postgres;Password=sua_senha;Host=localhost;Port=5432;Database=crawler;
+       ↓ Se usuario/senha é "postgres", deixe:
+       WEBCRAWLER_DB_CONNECTION=User ID=postgres;Password=postgres;Host=localhost;Port=5432;Database=crawler;
+
+
+📋 PASSO 3: CONFIGURAR DADOS DE PREENCHIMENTO AUTOMÁTICO (opcional)
+═════════════════════════════════════════════════════════════════════════════
+
+Essas variáveis usam valores padrão, mas você pode customizar:
+
+WEBCRAWLER_DEFAULT_FIRST_NAME=Clovis          → Seu primeiro nome
+WEBCRAWLER_DEFAULT_LAST_NAME=Silva             → Seu sobrenome
+WEBCRAWLER_DEFAULT_PHONE=11999999999           → Seu telefone
+WEBCRAWLER_DEFAULT_EMAIL=seu_email@example.com → Seu email (já tem padrão)
+WEBCRAWLER_DEFAULT_LOCATION=Sao Paulo          → Sua localização
+WEBCRAWLER_DEFAULT_SALARY=7000                 → Salário esperado desejado
+WEBCRAWLER_DEFAULT_YEARS_EXPERIENCE=3          → Anos de experiência
+
+
+⏱️  PASSO 4: CONFIGURAR DELAYS (opcional - recomendado se tiver bloqueio)
+═════════════════════════════════════════════════════════════════════════════
+
+Se LinkedIn está bloqueando (muitos erros de "rate limited"):
+
+Aumente os delays (valores em milissegundos):
+
+# Normal (mais rápido):
+WEBCRAWLER_APPLY_DELAY_MIN_MS=5000
+WEBCRAWLER_APPLY_DELAY_MAX_MS=15000
+
+# Se tiver bloqueio, mude para:
+WEBCRAWLER_APPLY_DELAY_MIN_MS=8000
+WEBCRAWLER_APPLY_DELAY_MAX_MS=20000
+
+Quanto maior o delay, menos chance de bloqueio (mas mais lento).
+
+
+✅ PASSO 5: SALVAR O ARQUIVO
+═════════════════════════════════════════════════════════════════════════════
+
+Pressione Ctrl+S para salvar o arquivo .env
+
+⚠️  IMPORTANTE: Não feche o arquivo sem salvar!
+
+
+🚀 PASSO 6: EXECUTAR O CRAWLER
+═════════════════════════════════════════════════════════════════════════════
+
+Agora você pode rodar:
+
+C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\EXECUTAR_CRAWLER.bat
+
+Ou duplo clique no arquivo.
+
+
+❌ TROUBLESHOOTING
+═════════════════════════════════════════════════════════════════════════════
+
+Erro: "Defina a variável de ambiente LINKEDIN_USERNAME"
+  → Você não preencheu o arquivo .env
+  → Verifique se o arquivo está na mesma pasta do WebCrawler.exe
+  → Certifique-se de ter removido a linha "seu_email_ou_usuario_linkedin"
+
+Erro: "System.TimeoutException"
+  → LinkedIn está bloqueando por muitas requisições
+  → Aumente WEBCRAWLER_APPLY_DELAY_MAX_MS para 25000-30000
+
+Erro: "Npgsql.NpgsqlException"
+  → Banco de dados não consegue conectar
+  → Verifique se PostgreSQL está rodando
+  → Confirme dados em WEBCRAWLER_DB_CONNECTION
+
+
+📌 DICA: Arquivo .env é carregado APENAS SE ESTIVER NA MESMA PASTA DO EXECUTÁVEL
+═════════════════════════════════════════════════════════════════════════════
+
+Arquivo esperado:
+C:\Users\CLOVIS\Documents\Projeto_Linkdim\WebCrawler\publish-manual\.env
+                                                                       ↑
+                                                              Mesma pasta do .exe
+
+Se estiver em outro lugar, o arquivo NÃO será carregado automaticamente.
+
+
+═══════════════════════════════════════════════════════════════════════════════
+Pronto! Preencha o .env, salve, e execute novamente.
+═══════════════════════════════════════════════════════════════════════════════
